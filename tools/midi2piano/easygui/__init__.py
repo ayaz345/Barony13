@@ -71,6 +71,7 @@ Works based on the software may be released under a proprietary license or as cl
 http://en.wikipedia.org/wiki/BSD_licenses#3-clause_license_.28.22New_BSD_License.22.29
 
 """
+
 egversion = __doc__.split()[1]
 
 __all__ = ['ynbox'
@@ -124,16 +125,8 @@ else:
 """
 
 
-if sys.hexversion >= 0x020600F0:
-    runningPython26 = True
-else:
-    runningPython26 = False
-
-if sys.hexversion >= 0x030000F0:
-    runningPython3 = True
-else:
-    runningPython3 = False
-
+runningPython26 = sys.hexversion >= 0x020600F0
+runningPython3 = sys.hexversion >= 0x030000F0
 try:
     from PIL import Image   as PILImage
     from PIL import ImageTk as PILImageTk
@@ -173,7 +166,7 @@ Terminating.
     sys.exit(0)
 
 def dq(s):
-    return '"%s"' % s
+    return f'"{s}"'
 
 rootWindowPosition = "+300+200"
 
@@ -292,8 +285,7 @@ def boolbox(msg="Shall I continue?"
             returns 0
     """
     reply = buttonbox(msg=msg, choices=choices, title=title, image=image)
-    if reply == choices[0]: return 1
-    else: return 0
+    return 1 if reply == choices[0] else 0
 
 
 #-----------------------------------------------------------------------
@@ -357,11 +349,9 @@ def buttonbox(msg="",title=" "
     if root:
         root.withdraw()
         boxRoot = Toplevel(master=root)
-        boxRoot.withdraw()
     else:
         boxRoot = Tk()
-        boxRoot.withdraw()
-
+    boxRoot.withdraw()
     boxRoot.protocol('WM_DELETE_WINDOW', denyWindowManagerClose )
     boxRoot.title(title)
     boxRoot.iconname('Dialog')
@@ -381,22 +371,21 @@ def buttonbox(msg="",title=" "
         if os.path.exists(imageFilename):
             if ext.lower() in [".gif", ".pgm", ".ppm"]:
                 tk_Image = PhotoImage(master=boxRoot, file=imageFilename)
-            else:
-                if PILisLoaded:
-                    try:
-                        pil_Image = PILImage.open(imageFilename)
-                        tk_Image = PILImageTk.PhotoImage(pil_Image, master=boxRoot)
-                    except:
-                        msg += ImageErrorMsg % (imageFilename,
-                            "\nThe Python Imaging Library (PIL) could not convert this file to a displayable image."
-                            "\n\nPIL reports:\n" + exception_format())
-
-                else:  # PIL is not loaded
+            elif PILisLoaded:
+                try:
+                    pil_Image = PILImage.open(imageFilename)
+                    tk_Image = PILImageTk.PhotoImage(pil_Image, master=boxRoot)
+                except:
                     msg += ImageErrorMsg % (imageFilename,
-                    "\nI could not import the Python Imaging Library (PIL) to display the image.\n\n"
-                    "You may need to install PIL\n"
-                    "(http://www.pythonware.com/products/pil/)\n"
-                    "to display " + ext + " image files.")
+                        "\nThe Python Imaging Library (PIL) could not convert this file to a displayable image."
+                        "\n\nPIL reports:\n" + exception_format())
+
+            else:  # PIL is not loaded
+                msg += ImageErrorMsg % (imageFilename,
+                "\nI could not import the Python Imaging Library (PIL) to display the image.\n\n"
+                "You may need to install PIL\n"
+                "(http://www.pythonware.com/products/pil/)\n"
+                "to display " + ext + " image files.")
 
         else:
             msg += ImageErrorMsg % (imageFilename, "\nImage file not found.")
@@ -489,14 +478,11 @@ def integerbox(msg=""
             + "upperbound of " + dq(str(upperbound)) , "Error")
 
     if msg == "":
-        msg = ("Enter an integer between " + str(lowerbound)
-            + " and "
-            + str(upperbound)
-            )
+        msg = f"Enter an integer between {str(lowerbound)} and {str(upperbound)}"
 
     while 1:
         reply = enterbox(msg, title, str(default), image=image, root=root)
-        if reply == None: return None
+        if reply is None: return None
 
         try:
             reply = int(reply)
@@ -638,9 +624,9 @@ def __multfillablebox(msg="Fill in values for the fields."
     fields = list(fields[:])  # convert possible tuples to a list
     values = list(values[:])  # convert possible tuples to a list
 
-    if   len(values) == len(fields): pass
+    if len(values) == len(fields): pass
     elif len(values) >  len(fields):
-        fields = fields[0:len(values)]
+        fields = fields[:len(values)]
     else:
         while len(values) < len(fields):
             values.append("")
@@ -709,7 +695,7 @@ def __multfillablebox(msg="Fill in values for the fields."
     commandButton  = okButton
     handler = __multenterboxGetText
     for selectionEvent in STANDARD_SELECTION_EVENTS:
-        commandButton.bind("<%s>" % selectionEvent, handler)
+        commandButton.bind(f"<{selectionEvent}>", handler)
 
 
     # ------------------ cancel button -------------------------------
@@ -721,7 +707,7 @@ def __multfillablebox(msg="Fill in values for the fields."
     commandButton  = cancelButton
     handler = __multenterboxCancel
     for selectionEvent in STANDARD_SELECTION_EVENTS:
-        commandButton.bind("<%s>" % selectionEvent, handler)
+        commandButton.bind(f"<{selectionEvent}>", handler)
 
 
     # ------------------- time for action! -----------------
@@ -739,9 +725,7 @@ def __multfillablebox(msg="Fill in values for the fields."
 def __multenterboxGetText(event):
     global __multenterboxText
 
-    __multenterboxText = []
-    for entryWidget in entryWidgets:
-        __multenterboxText.append(entryWidget.get())
+    __multenterboxText = [entryWidget.get() for entryWidget in entryWidgets]
     boxRoot.quit()
 
 
@@ -816,19 +800,17 @@ def __fillablebox(msg
     global boxRoot, __enterboxText, __enterboxDefaultText
     global cancelButton, entryWidget, okButton
 
-    if title == None: title == ""
-    if default == None: default = ""
+    if title is None: title == ""
+    if default is None: default = ""
     __enterboxDefaultText = default
     __enterboxText        = __enterboxDefaultText
 
     if root:
         root.withdraw()
         boxRoot = Toplevel(master=root)
-        boxRoot.withdraw()
     else:
         boxRoot = Tk()
-        boxRoot.withdraw()
-
+    boxRoot.withdraw()
     boxRoot.protocol('WM_DELETE_WINDOW', denyWindowManagerClose )
     boxRoot.title(title)
     boxRoot.iconname('Dialog')
@@ -848,22 +830,21 @@ def __fillablebox(msg
         if os.path.exists(imageFilename):
             if ext.lower() in [".gif", ".pgm", ".ppm"]:
                 tk_Image = PhotoImage(master=boxRoot, file=imageFilename)
-            else:
-                if PILisLoaded:
-                    try:
-                        pil_Image = PILImage.open(imageFilename)
-                        tk_Image = PILImageTk.PhotoImage(pil_Image, master=boxRoot)
-                    except:
-                        msg += ImageErrorMsg % (imageFilename,
-                            "\nThe Python Imaging Library (PIL) could not convert this file to a displayable image."
-                            "\n\nPIL reports:\n" + exception_format())
-
-                else:  # PIL is not loaded
+            elif PILisLoaded:
+                try:
+                    pil_Image = PILImage.open(imageFilename)
+                    tk_Image = PILImageTk.PhotoImage(pil_Image, master=boxRoot)
+                except:
                     msg += ImageErrorMsg % (imageFilename,
-                    "\nI could not import the Python Imaging Library (PIL) to display the image.\n\n"
-                    "You may need to install PIL\n"
-                    "(http://www.pythonware.com/products/pil/)\n"
-                    "to display " + ext + " image files.")
+                        "\nThe Python Imaging Library (PIL) could not convert this file to a displayable image."
+                        "\n\nPIL reports:\n" + exception_format())
+
+            else:  # PIL is not loaded
+                msg += ImageErrorMsg % (imageFilename,
+                "\nI could not import the Python Imaging Library (PIL) to display the image.\n\n"
+                "You may need to install PIL\n"
+                "(http://www.pythonware.com/products/pil/)\n"
+                "to display " + ext + " image files.")
 
         else:
             msg += ImageErrorMsg % (imageFilename, "\nImage file not found.")
@@ -914,7 +895,7 @@ def __fillablebox(msg
     commandButton  = okButton
     handler = __enterboxGetText
     for selectionEvent in STANDARD_SELECTION_EVENTS:
-        commandButton.bind("<%s>" % selectionEvent, handler)
+        commandButton.bind(f"<{selectionEvent}>", handler)
 
 
     # ------------------ cancel button -------------------------------
@@ -926,7 +907,7 @@ def __fillablebox(msg
     commandButton  = cancelButton
     handler = __enterboxCancel
     for selectionEvent in STANDARD_SELECTION_EVENTS:
-        commandButton.bind("<%s>" % selectionEvent, handler)
+        commandButton.bind(f"<{selectionEvent}>", handler)
 
     # ------------------- time for action! -----------------
     entryWidget.focus_force()    # put the focus on the entryWidget
@@ -1036,7 +1017,7 @@ def __choicebox(msg
     # were given.
     #-------------------------------------------------------------------
     choices = list(choices[:])
-    if len(choices) == 0:
+    if not choices:
         choices = ["Program logic error - no choices were specified."]
     defaultButtons = ["OK", "Cancel"]
 
@@ -1047,7 +1028,7 @@ def __choicebox(msg
     lines_to_show = min(len(choices), 20)
     lines_to_show = 20
 
-    if title == None: title = ""
+    if title is None: title = ""
 
     # Initialize __choiceboxResults
     # This is the value that will be returned if the user clicks the close icon
@@ -1068,7 +1049,7 @@ def __choicebox(msg
     boxRoot.geometry(rootWindowPosition)
     boxRoot.expand=NO
     boxRoot.minsize(root_width, root_height)
-    rootWindowPosition = "+" + str(root_xpos) + "+" + str(root_ypos)
+    rootWindowPosition = f"+{root_xpos}+{root_ypos}"
     boxRoot.geometry(rootWindowPosition)
 
     # ---------------- put the frames in the window -----------------------------------------
@@ -1139,8 +1120,7 @@ def __choicebox(msg
     lastInserted = None
     choiceboxChoices = []
     for choice in choices:
-        if choice == lastInserted: pass
-        else:
+        if choice != lastInserted:
             choiceboxWidget.insert(END, choice)
             choiceboxChoices.append(choice)
             lastInserted = choice
@@ -1148,7 +1128,7 @@ def __choicebox(msg
     boxRoot.bind('<Any-Key>', KeyboardListener)
 
     # put the buttons in the buttonsFrame
-    if len(choices) > 0:
+    if choices:
         okButton = Button(buttonsFrame, takefocus=YES, text="OK", height=1, width=6)
         bindArrows(okButton)
         okButton.pack(expand=NO, side=TOP,  padx='2m', pady='1m', ipady="1m", ipadx="2m")
@@ -1157,7 +1137,7 @@ def __choicebox(msg
         commandButton  = okButton
         handler = __choiceboxGetChoice
         for selectionEvent in STANDARD_SELECTION_EVENTS:
-            commandButton.bind("<%s>" % selectionEvent, handler)
+            commandButton.bind(f"<{selectionEvent}>", handler)
 
         # now bind the keyboard events
         choiceboxWidget.bind("<Return>", __choiceboxGetChoice)
@@ -1175,11 +1155,11 @@ def __choicebox(msg
     commandButton  = cancelButton
     handler = __choiceboxCancel
     for selectionEvent in STANDARD_SELECTION_EVENTS:
-        commandButton.bind("<%s>" % selectionEvent, handler)
+        commandButton.bind(f"<{selectionEvent}>", handler)
 
 
     # add special buttons for multiple select features
-    if len(choices) > 0 and __choiceboxMultipleSelect:
+    if choices and __choiceboxMultipleSelect:
         selectionButtonsFrame = Frame(messageFrame)
         selectionButtonsFrame.pack(side=RIGHT, fill=Y, expand=NO)
 
@@ -1320,8 +1300,8 @@ def exceptionbox(msg=None, title=None):
     Note that you do not need to (and cannot) pass an exception object
     as an argument.  The latest exception will automatically be used.
     """
-    if title == None: title = "Error Report"
-    if msg == None:
+    if title is None: title = "Error Report"
+    if msg is None:
         msg = "An error (exception) has occurred in the program."
 
     codebox(msg, title, exception_format())

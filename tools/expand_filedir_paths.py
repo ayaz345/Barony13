@@ -20,11 +20,10 @@ source_pattern = re.compile(r"^.*?\.(dm|dmm)$")
 def read_filedirs(filename):
     result = []
     dme_file = file(filename, "rt")
-    
+
     # Read each line from the file and check for regex pattern match
     for row in dme_file:
-        match = filedir_pattern.match(row)
-        if match:
+        if match := filedir_pattern.match(row):
             result.append(match.group(1))
 
     dme_file.close()
@@ -58,19 +57,16 @@ def rewrite_sources(resources):
     # resources dictionary which can't be passed directly to this function
     def replace_func(name):
         key = name.group(1).lower()
-        if key in resources:
-            replacement = resources[key]
-        else:
-            replacement = name.group(1)
-        return "'" + replacement + "'"
-    
+        replacement = resources[key] if key in resources else name.group(1)
+        return f"'{replacement}'"
+
     # Search recursively for all .dm and .dmm files
     for (dirpath, dirs, files) in os.walk("."):
         for name in files:
             if source_pattern.match(name):
-                path = dirpath + '/' + name
+                path = f'{dirpath}/{name}'
                 source_file = file(path, "rt")
-                output_file = file(path + ".tmp", "wt")
+                output_file = file(f"{path}.tmp", "wt")
 
                 # Read file one line at a time and perform replacement of all
                 # single quoted resource names with the fullpath to that resource
@@ -86,7 +82,7 @@ def rewrite_sources(resources):
                 # output. On Windows, an atomic rename() operation is not
                 # possible like it is under POSIX.
                 os.remove(path)
-                os.rename(path + ".tmp", path)
+                os.rename(f"{path}.tmp", path)
 
 dirs = read_filedirs("tgstation.dme");
 resources = index_files(dirs)

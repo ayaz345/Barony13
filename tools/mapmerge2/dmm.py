@@ -62,8 +62,7 @@ class DMM:
         # last-second handling of bogus keys to help prevent and fix broken maps
         self._ensure_free_keys(0)
         max_key = max_key_for(self.key_length)
-        bad_keys = {key: 0 for key in self.dictionary.keys() if key > max_key}
-        if bad_keys:
+        if bad_keys := {key: 0 for key in self.dictionary.keys() if key > max_key}:
             print(f"Warning: fixing {len(bad_keys)} overflowing keys")
             for k in bad_keys:
                 # create a new non-bogus key and transfer that value to it
@@ -223,7 +222,7 @@ def save_tgm(dmm, output):
     for z in range(1, max_z + 1):
         output.write("\n")
         for x in range(1, max_x + 1):
-            output.write(f"({x},{1},{z}) = {{\"\n")
+            output.write(f'({x},1,{z}) = {{\"\n')
             for y in range(1, max_y + 1):
                 output.write(f"{num_to_key(dmm.grid[x, y, z], dmm.key_length)}\n")
             output.write("\"}\n")
@@ -275,7 +274,7 @@ def _parse(map_raw_text):
     curr_key_len = 0
     curr_key = 0
     curr_datum = ""
-    curr_data = list()
+    curr_data = []
 
     in_map_block = False
     in_coord_block = False
@@ -295,7 +294,7 @@ def _parse(map_raw_text):
     curr_x = 0
     curr_y = 0
     curr_z = 0
-    grid = dict()
+    grid = {}
 
     it = iter(map_raw_text)
 
@@ -305,11 +304,8 @@ def _parse(map_raw_text):
             in_comment_line = False
             comment_trigger = False
             continue
-        elif in_comment_line:
+        elif in_comment_line or char == "\t":
             continue
-        elif char == "\t":
-            continue
-
         if char == "/" and not in_quote_block:
             if comment_trigger:
                 in_comment_line = True
@@ -325,19 +321,13 @@ def _parse(map_raw_text):
 
                 if in_quote_block:
                     if char == "\\":
-                        curr_datum = curr_datum + char
                         escaping = True
 
                     elif escaping:
-                        curr_datum = curr_datum + char
                         escaping = False
 
                     elif char == "\"":
-                        curr_datum = curr_datum + char
                         in_quote_block = False
-
-                    else:
-                        curr_datum = curr_datum + char
 
                 else:
                     if skip_whitespace and char == " ":
@@ -346,20 +336,14 @@ def _parse(map_raw_text):
                     skip_whitespace = False
 
                     if char == "\"":
-                        curr_datum = curr_datum + char
                         in_quote_block = True
 
                     elif char == ";":
                         skip_whitespace = True
-                        curr_datum = curr_datum + char
-
                     elif char == "}":
-                        curr_datum = curr_datum + char
                         in_varedit_block = False
 
-                    else:
-                        curr_datum = curr_datum + char
-
+                curr_datum = curr_datum + char
             elif char == "{":
                 curr_datum = curr_datum + char
                 in_varedit_block = True
@@ -376,7 +360,7 @@ def _parse(map_raw_text):
                 except bidict.ValueDuplicationError:
                     # if the map has duplicate values, eliminate them now
                     duplicate_keys[curr_key] = dictionary.inv[curr_data]
-                curr_data = list()
+                curr_data = []
                 curr_datum = ""
                 curr_key = 0
                 curr_key_len = 0
@@ -397,7 +381,6 @@ def _parse(map_raw_text):
                 curr_key = BASE * curr_key + base52_r[char]
                 curr_key_len += 1
 
-        # else we're looking for a key block, a data block or the map block
         elif char == "\"":
             in_key_block = True
             after_data_block = False

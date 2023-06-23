@@ -43,25 +43,28 @@ def prompt_maps(settings, verb):
         print("Could not autodetect the _maps folder, set MAPROOT")
         exit(1)
 
-    list_of_files = list()
+    list_of_files = []
     for root, directories, filenames in os.walk(settings.map_folder):
-        for filename in [f for f in filenames if f.endswith(".dmm")]:
-            list_of_files.append(pathlib.Path(root, filename))
-
+        list_of_files.extend(
+            pathlib.Path(root, filename)
+            for filename in [f for f in filenames if f.endswith(".dmm")]
+        )
     last_dir = ""
     for i, this_file in enumerate(list_of_files):
         this_dir = this_file.parent
         if last_dir != this_dir:
             print("--------------------------------")
             last_dir = this_dir
-        print("[{}]: {}".format(i, pretty_path(settings, str(this_file))))
+        print(f"[{i}]: {pretty_path(settings, str(this_file))}")
 
     print("--------------------------------")
-    in_list = input("List the maps you want to " + verb + " (example: 1,3-5,12):\n")
+    in_list = input(
+        f"List the maps you want to {verb}" + " (example: 1,3-5,12):\n"
+    )
     in_list = in_list.replace(" ", "")
     in_list = in_list.split(",")
 
-    valid_indices = list()
+    valid_indices = []
     for m in in_list:
         index_range = m.split("-")
         if len(index_range) == 1:
@@ -115,7 +118,7 @@ def process(settings, verb, *, modify=True, backup=None):
         print(f' - {pretty_path(settings, path_str)}')
 
         if backup:
-            shutil.copyfile(path_str, path_str + ".before")
+            shutil.copyfile(path_str, f"{path_str}.before")
 
         try:
             yield path_str

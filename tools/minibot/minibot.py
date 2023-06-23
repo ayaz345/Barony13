@@ -98,9 +98,13 @@ def nudge_handler():
 			data = pickle.loads(rawdata)
 			logger.debug(data)
 			if data["ip"][0] == "#":
-				message = "{0} :AUTOMATIC ANNOUNCEMENT : {1}\r\n".format(data["ip"], str(" ".join(data["data"])))
+				message = "{0} :AUTOMATIC ANNOUNCEMENT : {1}\r\n".format(
+					data["ip"], " ".join(data["data"])
+				)
 			else:
-				message = "{0} :AUTOMATIC ANNOUNCEMENT : {1} | {2}\r\n".format(defaultchannel, data["ip"], str(" ".join(data["data"])))
+				message = "{0} :AUTOMATIC ANNOUNCEMENT : {1} | {2}\r\n".format(
+					defaultchannel, data["ip"], " ".join(data["data"])
+				)
 		try:
 			irc.send(bytes("PRIVMSG {0}".format(message), "UTF-8"))
 		except:
@@ -116,7 +120,7 @@ def irc_handler():
 			buf = irc.recv(1024).decode("UTF-8").split("\n")
 			for i in buf:
 				logger.debug(i)
-				if i[0:4] == "PING":
+				if i[:4] == "PING":
 					irc.send(bytes("PONG {0}\r\n".format(i[5:]), "UTF-8"))
 				else:
 					l = i.split(" ")

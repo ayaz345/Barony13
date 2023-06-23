@@ -95,8 +95,8 @@ class Dmi:
         gridwidth = width // dmi.width
         i = 0
         for state in dmi.states:
-            for frame in range(state._nframes):
-                for dir in range(state.dirs):
+            for _ in range(state._nframes):
+                for _ in range(state.dirs):
                     px = dmi.width * (i % gridwidth)
                     py = dmi.height * (i // gridwidth)
                     im = image.crop((px, py, px + dmi.width, py + dmi.height))
@@ -121,7 +121,6 @@ class Dmi:
             if state.name == name:
                 return state
         raise KeyError(name)
-        return self.default_state
 
     def _assemble_comment(self):
         comment = "# BEGIN DMI\n"
@@ -228,9 +227,7 @@ def unescape(text, quote='"'):
     return text
 
 def parse_num(value):
-    if '.' in value:
-        return float(value)
-    return int(value)
+    return float(value) if '.' in value else int(value)
 
 def parse_bool(value):
     if value not in ('0', '1'):

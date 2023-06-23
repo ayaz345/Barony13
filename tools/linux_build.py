@@ -28,11 +28,8 @@ def stage1():
     play("sound/misc/compiler-stage1.ogg")
 
 def stage2(map):
-    if map:
-        txt = "-M{}".format(map)
-    else:
-        txt = ''
-    args = "bash tools/travis/dm.sh {} yogstation.dme".format(txt)
+    txt = f"-M{map}" if map else ''
+    args = f"bash tools/travis/dm.sh {txt} yogstation.dme"
     print(args)
     p = subprocess.Popen(args, shell=True)
     wait(p)
@@ -50,10 +47,10 @@ def stage3(profile_mode=False):
             if "Initializations complete" in stdout:
                 play("sound/misc/server-ready.ogg")
                 time_taken = time.time() - start_time
-                print("{} seconds taken to fully start".format(time_taken))
+                print(f"{time_taken} seconds taken to fully start")
             if "Map is ready." in stdout:
                 time_taken = time.time() - start_time
-                print("{} seconds for initial map loading".format(time_taken))
+                print(f"{time_taken} seconds for initial map loading")
                 if profile_mode:
                     return time_taken
             sys.stdout.write(stdout)
@@ -86,7 +83,7 @@ def main():
     if stage == 3:
         value = stage3(profile_mode=args.profile_mode)
         with open('profile~', 'a') as f:
-            f.write("{}\n".format(value))
+            f.write(f"{value}\n")
 
 if __name__=='__main__':
     try:

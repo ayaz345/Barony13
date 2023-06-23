@@ -25,8 +25,7 @@ def parse_text_flags(text, previous):
     flags_int = 8192
     exclude_flags_int = 0
     can_edit_flags_int = 0
-    flags = text.split(" ")
-    if flags:
+    if flags := text.split(" "):
         for flag in flags:
             sign = flag[:1]
             if flag[1:] in ("@", "prev"):
@@ -79,8 +78,8 @@ with open("..\\config\\admin_ranks.txt") as rank_file:
             if line.startswith("#"):
                 continue
             matches = re.match("(.+)\\b\\s+=\\s*(.*)", line)
-            rank = "".join((c for c in matches.group(1) if c not in ckeyExformat))
-            flags = parse_text_flags(matches.group(2), previous)
+            rank = "".join(c for c in matches[1] if c not in ckeyExformat)
+            flags = parse_text_flags(matches[2], previous)
             previous = flags
             cursor.execute("INSERT INTO {0} (rank, flags, exclude_flags, can_edit_flags) VALUES ('{1}', {2}, {3}, {4})".format(ranks_table, rank, flags[0], flags[1], flags[2]))
 with open("..\\config\\admins.txt") as admins_file:
@@ -91,8 +90,8 @@ with open("..\\config\\admins.txt") as admins_file:
             if line.startswith("#"):
                 continue
             matches = re.match("(.+)\\b\\s+=\\s+(.+)", line)
-            ckey = "".join((c for c in matches.group(1) if c not in ckeyformat)).lower()
-            rank = "".join((c for c in matches.group(2) if c not in ckeyExformat))
+            ckey = "".join(c for c in matches[1] if c not in ckeyformat).lower()
+            rank = "".join(c for c in matches[2] if c not in ckeyExformat)
             cursor.execute("INSERT INTO {0} (ckey, rank) VALUES ('{1}', '{2}')".format(admin_table, ckey, rank))
 db.commit()
 cursor.close()

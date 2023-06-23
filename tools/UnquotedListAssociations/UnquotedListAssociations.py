@@ -11,7 +11,7 @@ from datetime import date
 
 #Climbs up from /tools/UnquotedListAssociations and along to ../code
 scan_dir = "code" #used later to truncate log file paths
-real_dir = os.path.abspath("../../"+scan_dir)
+real_dir = os.path.abspath(f"../../{scan_dir}")
 define_dict = {}
 total_unquoted_list_associations = 0
 log_output = True #Set to false for mad speeeeeed (slightly faster because no text output to the window, but still full log files)
@@ -50,33 +50,28 @@ def scan_dm_file_for_unquoted_list_associations(_file):
     global total_unquoted_list_associations
     if not _file.endswith(".dm"):
         return False
-    
+
     with open(_file, "r") as dm_file:
         filecontents = dm_file.read()
 
-        unquoted_list_associations = []
-        list_definitions = []
-
-        for listdef in re.findall(r"=\s*list\((.*)\)", filecontents):
-            list_definitions.append(listdef)
-
+        list_definitions = list(re.findall(r"=\s*list\((.*)\)", filecontents))
         listdefs = ' '.join(list_definitions)
 
-        for matchtuple in re.findall(r"(?:list\(|,)\s*(\w+)\s*,*\s*=\s*(\w+)", listdefs):
-            if not define_dict.get(matchtuple[0], False): #defines are valid
-                unquoted_list_associations.append(matchtuple)
-                
-        count = len(unquoted_list_associations)
-            
-        if count:
-            file_report = ".."+scan_dir+str(_file).split(scan_dir)[1]+" " #crop it down to ..\code\DIR\FILE.dm, everything else is developer specific
-            for nla in unquoted_list_associations:
-                file_report += "\nlist(" + nla[0] + " = " + nla[1] + ")"
-            total_unquoted_list_associations += count
-            file_report += "\nTotal Unquoted List Associations: "+str(count)
-            return file_report
-        else:
+        unquoted_list_associations = [
+            matchtuple
+            for matchtuple in re.findall(
+                r"(?:list\(|,)\s*(\w+)\s*,*\s*=\s*(\w+)", listdefs
+            )
+            if not define_dict.get(matchtuple[0], False)
+        ]
+        if not (count := len(unquoted_list_associations)):
             return False
+        file_report = f"..{scan_dir}{str(_file).split(scan_dir)[1]} "
+        for nla in unquoted_list_associations:
+            file_report += "\nlist(" + nla[0] + " = " + nla[1] + ")"
+        total_unquoted_list_associations += count
+        file_report += "\nTotal Unquoted List Associations: "+str(count)
+        return file_report
 
 #Build a dict of defines, such that we can rule them out as NamedListArgs
 def build_define_dictionary(scan_dir):

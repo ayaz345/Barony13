@@ -42,9 +42,7 @@ def condition(event):
     """
     if event[0] == 'track_name' and event[2] == 'Drums': # Percussion
         return False
-    if event[0] == 'note': # Only thing that matters
-        return True
-    return False
+    return event[0] == 'note'
 
 def notenum2string(num, accidentals, octaves):
     """
@@ -52,9 +50,6 @@ def notenum2string(num, accidentals, octaves):
     runs expressed using _accidentals_ and _octaves_
     """
     names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
-    convert_table = {1:0, 3:1, 6:2, 8:3, 10:4}
-    inclusion_table = {0:0, 2:1, 5:2, 7:3, 9:4}
-
     num += OCTAVE_KEYS * OCTAVE_TRANSPOSE
     octave = int(num / OCTAVE_KEYS)
     if octave < 1 or octave > HIGHEST_OCTAVE:
@@ -71,8 +66,11 @@ def notenum2string(num, accidentals, octaves):
     add_n = False
 
     if accidental:
+        convert_table = {1:0, 3:1, 6:2, 8:3, 10:4}
         accidentals[convert_table[name_indx]] = True
     else:
+        inclusion_table = {0:0, 2:1, 5:2, 7:3, 9:4}
+
         if name_indx in inclusion_table:
             add_n = accidentals[inclusion_table[name_indx]]
             accidentals[inclusion_table[name_indx]] = False
@@ -228,8 +226,8 @@ def obtain_sheet_music(score, most_frequent_dur):
     """
     result = ""
 
-    octaves = [3 for i in range(12)]
-    accidentals = [False for i in range(7)]
+    octaves = [3 for _ in range(12)]
+    accidentals = [False for _ in range(7)]
     for event in score:
         for note_indx in range(len(event[0])):
             data = notenum2string(event[0][note_indx], accidentals, octaves)
@@ -252,7 +250,7 @@ def explode_sheet_music(sheet_music):
     and such and returns a list of such lines
     """
     split_music = sheet_music.split(',')
-    split_music = list(map(lambda note: note+',', split_music))
+    split_music = list(map(lambda note: f'{note},', split_music))
     split_list = []
     counter = 0
     line_counter = 1
@@ -273,11 +271,11 @@ def finalize_sheet_music(split_music, most_frequent_dur):
     """
     Recreates sheet music from exploded sheet music, truncates it and returns it
     """
-    sheet_music = ""
-    for note in split_music:
-        sheet_music += note
+    sheet_music = "".join(split_music)
     sheet_music = sheet_music.rstrip(',') # Trim the last ,
-    sheet_music = "BPM: " + str(int(60000 / most_frequent_dur)) + END_OF_LINE_CHAR + sheet_music
+    sheet_music = (
+        f"BPM: {int(60000 / most_frequent_dur)}{END_OF_LINE_CHAR}{sheet_music}"
+    )
     return sheet_music[:min(len(sheet_music), OVERALL_IMPORT_LIM)]
 # END OF CONVERSION FUNCTIONS
 

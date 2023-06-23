@@ -173,11 +173,7 @@ sys.stdout.buffer.write(my_midi)
     tracks = copy.deepcopy(opus)
     ticks = int(tracks.pop(0))
     ntracks = len(tracks)
-    if ntracks == 1:
-        format = 0
-    else:
-        format = 1
-
+    format = 0 if ntracks == 1 else 1
     my_midi = b"MThd\x00\x00\x00\x06"+struct.pack('>HHH',format,ntracks,ticks)
     for track in tracks:
         events = _encode(track)
@@ -236,11 +232,7 @@ my_opus = score2opus(my_score)
             else:
                time2events[scoreevent[1]] = [scoreevent,]
 
-        sorted_times = []  # list of keys
-        for k in time2events.keys():
-            sorted_times.append(k)
-        sorted_times.sort()
-
+        sorted_times = sorted(time2events)
         sorted_events = []  # once-flattened list of values sorted by key
         for time in sorted_times:
             sorted_events.extend(time2events[time])
@@ -271,31 +263,35 @@ def midi2opus(midi=b''):
     if len(my_midi) < 4:
         _clean_up_warnings()
         return [1000,[],]
-    id = bytes(my_midi[0:4])
+    id = bytes(my_midi[:4])
     if id != b'MThd':
-        _warn("midi2opus: midi starts with "+str(id)+" instead of 'MThd'")
+        _warn(f"midi2opus: midi starts with {id} instead of 'MThd'")
         _clean_up_warnings()
         return [1000,[],]
     [length, format, tracks_expected, ticks] = struct.unpack(
      '>IHHH', bytes(my_midi[4:14]))
     if length != 6:
-        _warn("midi2opus: midi header length was "+str(length)+" instead of 6")
+        _warn(f"midi2opus: midi header length was {str(length)} instead of 6")
         _clean_up_warnings()
         return [1000,[],]
     my_opus = [ticks,]
     my_midi = my_midi[14:]
     track_num = 1   # 5.1
     while len(my_midi) >= 8:
-        track_type   = bytes(my_midi[0:4])
+        track_type = bytes(my_midi[:4])
         if track_type != b'MTrk':
-            _warn('midi2opus: Warning: track #'+str(track_num)+' type is '+str(track_type)+" instead of b'MTrk'")
+            _warn(
+                f"midi2opus: Warning: track #{str(track_num)} type is {track_type} instead of b'MTrk'"
+            )
         [track_length] = struct.unpack('>I', my_midi[4:8])
         my_midi = my_midi[8:]
         if track_length > len(my_midi):
-            _warn('midi2opus: track #'+str(track_num)+' length '+str(track_length)+' is too large')
+            _warn(
+                f'midi2opus: track #{str(track_num)} length {str(track_length)} is too large'
+            )
             _clean_up_warnings()
             return my_opus   # 5.0
-        my_midi_track = my_midi[0:track_length]
+        my_midi_track = my_midi[:track_length]
         my_track = _decode(my_midi_track)
         my_opus.append(my_track)
         my_midi = my_midi[track_length:]
@@ -328,9 +324,11 @@ see opus2midi() and score2opus().
                     new_event[2] = ticks_so_far - new_event[1]
                     score_track.append(new_event)
                 elif pitch > 127:
-                    _warn('opus2score: note_off with no note_on, bad pitch='+str(pitch))
+                    _warn(f'opus2score: note_off with no note_on, bad pitch={str(pitch)}')
                 else:
-                    _warn('opus2score: note_off with no note_on cha='+str(cha)+' pitch='+str(pitch))
+                    _warn(
+                        f'opus2score: note_off with no note_on cha={str(cha)} pitch={str(pitch)}'
+                    )
             elif opus_event[0] == 'note_on':
                 cha = opus_event[2]
                 pitch = opus_event[3]
@@ -344,12 +342,13 @@ see opus2midi() and score2opus().
                 opus_event[1] = ticks_so_far
                 score_track.append(opus_event)
         # check for unterminated notes (OisÃ­n) -- 5.2
-        for chapitch in chapitch2note_on_events:
-            note_on_events = chapitch2note_on_events[chapitch]
+        for note_on_events in chapitch2note_on_events.values():
             for new_e in note_on_events:
                 new_e[2] = ticks_so_far - new_e[1]
                 score_track.append(new_e)
-                _warn("opus2score: note_on with no note_off cha="+str(new_e[3])+' pitch='+str(new_e[4])+'; adding note_off at end')
+                _warn(
+                    f"opus2score: note_on with no note_off cha={str(new_e[3])} pitch={str(new_e[4])}; adding note_off at end"
+                )
         score.append(score_track)
     _clean_up_warnings()
     return score
@@ -376,12 +375,12 @@ per second and one tick per millisecond.  This makes it
 hard to retrieve any information about beats or barlines,
 but it does make it easy to mix different scores together.
 '''
-    if old_opus == None:
+    if old_opus is None:
         return [1000,[],]
     try:
         old_tpq  = int(old_opus[0])
     except IndexError:   # 5.0
-        _warn('to_millisecs: the opus '+str(type(old_opus))+' has no elements')
+        _warn(f'to_millisecs: the opus {str(type(old_opus))} has no elements')
         return [1000,[],]
     new_opus = [1000,]
     millisec_per_old_tick = 1000.0 / old_tpq  # float: will be rounded later
@@ -416,11 +415,11 @@ The type of track (opus or score) is autodetected.
 def grep(score=None, channels=None):
     r'''Returns a "score" containing only the channels specified
 '''
-    if score == None:
+    if score is None:
         return [1000,[],]
     ticks = score[0]
     new_score = [ticks,]
-    if channels == None:
+    if channels is None:
         return new_score
     channels = set(channels)
     global Event2channelindex
@@ -428,8 +427,7 @@ def grep(score=None, channels=None):
     while itrack < len(score):
         new_score.append([])
         for event in score[itrack]:
-            channel_index = Event2channelindex.get(event[0], False)
-            if channel_index:
+            if channel_index := Event2channelindex.get(event[0], False):
                 if event[channel_index] in channels:
                     new_score[itrack].append(event)
             else:
@@ -440,7 +438,7 @@ def grep(score=None, channels=None):
 def play_score(score=None):
     r'''Converts the "score" to midi, and feeds it into 'aplaymidi -'
 '''
-    if score == None:
+    if score is None:
         return
     import subprocess
     pipe = subprocess.Popen(['aplaymidi','-'], stdin=subprocess.PIPE)
@@ -474,7 +472,7 @@ also occurs if "start_time" is negative, and is also the
 default if neither "shift" nor "start_time" are specified.
 '''
     #_warn('tracks='+str(tracks))
-    if score == None or len(score) < 2:
+    if score is None or len(score) < 2:
         return [1000, [],]
     new_score = [score[0],]
     my_type = score_type(score)
@@ -484,20 +482,20 @@ default if neither "shift" nor "start_time" are specified.
         _warn("timeshift: opus format is not supported\n")
         # _clean_up_scores()  6.2; doesn't exist! what was it supposed to do?
         return new_score
-    if not (shift == None) and not (start_time == None):
+    if shift is not None and start_time is not None:
         _warn("timeshift: shift and start_time specified: ignoring shift\n")
         shift = None
-    if shift == None:
-        if (start_time == None) or (start_time < 0):
+    if shift is None:
+        if start_time is None or start_time < 0:
             start_time = 0
-        # shift = start_time - from_time
+            # shift = start_time - from_time
 
     i = 1   # ignore first element (ticks)
     tracks = set(tracks)  # defend against tuples and lists
     earliest = 1000000000
-    if not (start_time == None) or shift < 0:  # first find the earliest event
+    if start_time is not None or shift < 0:  # first find the earliest event
         while i < len(score):
-            if len(tracks) and not ((i-1) in tracks):
+            if len(tracks) and i - 1 not in tracks:
                 i += 1
                 continue
             for event in score[i]:
@@ -508,7 +506,7 @@ default if neither "shift" nor "start_time" are specified.
             i += 1
     if earliest > 999999999:
         earliest = 0
-    if shift == None:
+    if shift is None:
         shift = start_time - earliest
     elif (earliest + shift) < 0:
         start_time = 0
@@ -516,7 +514,7 @@ default if neither "shift" nor "start_time" are specified.
 
     i = 1   # ignore first element (ticks)
     while i < len(score):
-        if len(tracks) == 0 or not ((i-1) in tracks):  # 3.8
+        if not tracks or i - 1 not in tracks:  # 3.8
             new_score.append(score[i])
             i += 1
             continue
@@ -533,7 +531,7 @@ default if neither "shift" nor "start_time" are specified.
             elif (shift < 0) and (new_event[1] >= (from_time+shift)):
                 continue
             new_track.append(new_event)
-        if len(new_track) > 0:
+        if new_track:
             new_score.append(new_track)
         i += 1
     _clean_up_warnings()
@@ -547,11 +545,11 @@ at "end_time" ticks (or at the end if "end_time" is not supplied).
 If the set "tracks" is specified, only those tracks will
 be returned.
 '''
-    if score == None or len(score) < 2:
+    if score is None or len(score) < 2:
         return [1000, [],]
-    if start_time == None:  # as of 4.2 start_time is recommended
+    if start_time is None:  # as of 4.2 start_time is recommended
         start_time = start  # start is legacy usage
-    if end_time == None:    # likewise
+    if end_time is None:    # likewise
         end_time = end
     new_score = [score[0],]
     my_type = score_type(score)
@@ -565,7 +563,7 @@ be returned.
     i = 1   # ignore first element (ticks); we count in ticks anyway
     tracks = set(tracks)  # defend against tuples and lists
     while i < len(score):
-        if len(tracks) and not ((i-1) in tracks):
+        if len(tracks) and i - 1 not in tracks:
             i += 1
             continue
         new_track = []
@@ -588,9 +586,11 @@ be returned.
                 new_track.append(event)
                 if (event[0] == 'note') and (event[1] < earliest_note_time):
                     earliest_note_time = event[1]
-        if len(new_track) > 0:
-            for c in channel2patch_num:
-                new_track.append(['patch_change',start_time,c,channel2patch_num[c]])
+        if new_track:
+            new_track.extend(
+                ['patch_change', start_time, c, value]
+                for c, value in channel2patch_num.items()
+            )
             new_track.append(['set_tempo', start_time, set_tempo_num])
             new_score.append(new_track)
         i += 1
@@ -600,16 +600,18 @@ be returned.
 def score_type(opus_or_score=None):
     r'''Returns a string, either 'opus' or 'score' or ''
 '''
-    if opus_or_score == None or str(type(opus_or_score)).find('list')<0 or len(opus_or_score) < 2:
+    if (
+        opus_or_score is None
+        or str(type(opus_or_score)).find('list') < 0
+        or len(opus_or_score) < 2
+    ):
         return ''
-    i = 1   # ignore first element
-    while i < len(opus_or_score):
+    for i in range(1, len(opus_or_score)):
         for event in opus_or_score[i]:
             if event[0] == 'note':
                 return 'score'
             elif event[0] == 'note_on':
                 return 'opus'
-        i += 1
     return ''
 
 def concatenate_scores(scores):
@@ -624,14 +626,12 @@ they will all get converted to millisecond-tick format.
     for input_score in input_scores[1:]:
         output_stats = score2stats(output_score)
         delta_ticks = output_stats['nticks']
-        itrack = 1
-        while itrack < len(input_score):
+        for itrack in range(1, len(input_score)):
             if itrack >= len(output_score): # new output track if doesn't exist
                 output_score.append([])
             for event in input_score[itrack]:
                 output_score[itrack].append(copy.deepcopy(event))
                 output_score[itrack][-1][1] += delta_ticks
-            itrack += 1
     return output_score
 
 def merge_scores(scores):
@@ -651,9 +651,9 @@ but there are of course only 15 available channels...
         new_channels = set(score2stats(input_score).get('channels_total', []))
         new_channels.discard(9)  # 2.8 cha9 must remain cha9 (in GM)
         for channel in channels_so_far & new_channels:
-            # consistently choose lowest avaiable, to ease testing
-            free_channels = list(all_channels - (channels_so_far|new_channels))
-            if len(free_channels) > 0:
+            if free_channels := list(
+                all_channels - (channels_so_far | new_channels)
+            ):
                 free_channels.sort()
                 free_channel = free_channels[0]
             else:

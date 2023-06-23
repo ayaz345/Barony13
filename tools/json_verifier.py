@@ -11,8 +11,7 @@ for file in files:
         try:
             json.load(f)
         except ValueError as exception:
-            msg.append("JSON synxtax error on file: {}".format(file))
-            msg.append(str(exception))
+            msg.extend((f"JSON synxtax error on file: {file}", str(exception)))
 if msg:
     print("\n".join(msg))
     exit(1)

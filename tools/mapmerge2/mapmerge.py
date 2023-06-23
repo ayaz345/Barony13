@@ -21,7 +21,7 @@ def merge_map(new_map, old_map, delete_unused=False):
     merged = DMM(key_length, size)
     merged.dictionary = old_map.dictionary.copy()
 
-    known_keys = dict()  # mapping fron 'new' key to 'merged' key
+    known_keys = {}
     unused_keys = set(old_map.dictionary.keys())  # keys going unused
 
     # step one: parse the new version, compare it to the old version, merge both
@@ -75,7 +75,7 @@ def merge_map(new_map, old_map, delete_unused=False):
         new_tile = new_map.dictionary[new_map.grid[x, y, z]]
         merged_tile = merged.dictionary[merged.grid[x, y, z]]
         if new_tile != merged_tile:
-            print(f"Error: the map has been mangled! This is a mapmerge bug!")
+            print("Error: the map has been mangled! This is a mapmerge bug!")
             print(f"At {x},{y},{z}.")
             print(f"Should be {new_tile}")
             print(f"Instead is {merged_tile}")
@@ -85,8 +85,8 @@ def merge_map(new_map, old_map, delete_unused=False):
 
 def main(settings):
     for fname in frontend.process(settings, "merge", backup=True):
-        shutil.copyfile(fname, fname + ".before")
-        old_map = DMM.from_file(fname + ".backup")
+        shutil.copyfile(fname, f"{fname}.before")
+        old_map = DMM.from_file(f"{fname}.backup")
         new_map = DMM.from_file(fname)
         merge_map(new_map, old_map).to_file(fname, settings.tgm)
 

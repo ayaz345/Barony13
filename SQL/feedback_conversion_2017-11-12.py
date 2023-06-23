@@ -51,17 +51,14 @@ def parse_text(details):
     if details.startswith('"') and details.endswith('"'):
         details = details[1:-1] #the first and last " aren't removed by splitting the dictionary
         details = details.split('" | "')
-    else:
-        if "_" in details:
-            details = details.split(' ')
+    elif "_" in details:
+        details = details.split(' ')
     return details
 
 def parse_tally(details):
     if not details:
         return
-    overflowed = None
-    if len(details) >= 65535: #a string this long means the data hit the 64KB character limit of TEXT columns
-        overflowed = True
+    overflowed = True if len(details) >= 65535 else None
     if details.startswith('"') and details.endswith('"'):
         details = details[details.find('"')+1:details.rfind('"')] #unlike others some of the tally data has extra characters to remove
         split_details = details.split('" | "')
@@ -107,11 +104,9 @@ def parse_nested(var_name, details):
                     details[i[:i.find('|')]][i[i.find('|')+1:]] += 1
                 else:
                     details[i[:i.find('|')]][i[i.find('|')+1:]] = 1
-            else:
-                if i in details and type(details[i]) is not dict: #sometimes keys that should have a value after a pipe just don't and would otherwise error here
-                    details[i] += 1
+            elif i in details and type(details[i]) is not dict: #sometimes keys that should have a value after a pipe just don't and would otherwise error here
+                details[i] += 1
         return details
-    #group by data after pipe
     elif var_name in ("cargo_imports", "traitor_uplink_items_bought", "export_sold_cost", "item_used_for_combat", "played_url"):
         if details.startswith('"') and details.endswith('"'):
             details = details[1:-1]
@@ -147,13 +142,11 @@ def parse_nested(var_name, details):
         for i in split_details:
             if "used" in i:
                 if "used" not in details[i[:i.find('|')]]:
-                    details[i[:i.find('|')]]["used"] = {}
-                    details[i[:i.find('|')]]["used"][i[i.rfind('|')+1:]] = 1
+                    details[i[:i.find('|')]]["used"] = {i[i.rfind('|')+1:]: 1}
+                elif i[i.rfind('|')+1:] in details[i[:i.find('|')]]["used"]:
+                    details[i[:i.find('|')]]["used"][i[i.rfind('|')+1:]] += 1
                 else:
-                    if i[i.rfind('|')+1:] in details[i[:i.find('|')]]["used"]:
-                        details[i[:i.find('|')]]["used"][i[i.rfind('|')+1:]] += 1
-                    else:
-                        details[i[:i.find('|')]]["used"][i[i.rfind('|')+1:]] = 1
+                    details[i[:i.find('|')]]["used"][i[i.rfind('|')+1:]] = 1
             elif "|" in i:
                 if i[i.find('|')+1:] in details[i[:i.find('|')]]:
                     details[i[:i.find('|')]][i[i.find('|')+1:]] += 1
@@ -216,12 +209,11 @@ def parse_associative(var_name, details):
             split_details = details.split('" | "')
         else:
             split_details = details.split(' ')
-        details = {}
         levels = {}
         for i in split_details:
             x = {i[:-1] : i[-1:]}
-            levels.update(x)
-        details["1"] = levels
+            levels |= x
+        details = {"1": levels}
         return details
 
 def parse_special(var_name, var_value, details):
@@ -297,8 +289,7 @@ def parse_multirow(var_name, var_value, details, multirows_completed):
             query_where += "var_name = \"{0}\"".format(i)
         query_where += ")"
         cursor.execute("SELECT var_name, var_value FROM {0} WHERE {1}".format(current_table, query_where))
-        rows = cursor.fetchall()
-        if rows:
+        if rows := cursor.fetchall():
             for r in rows:
                 details[ahelp_vars[r[0]]] = r[1]
         keys = list(ahelp_vars.keys())
@@ -311,8 +302,7 @@ def parse_multirow(var_name, var_value, details, multirows_completed):
         del  level_vars[var_name]
         i = list(level_vars)[0]
         cursor.execute("SELECT var_value FROM {0} WHERE round_id = {1} AND var_name = \"{2}\"".format(current_table, query_row[2], i))
-        row = cursor.fetchone()
-        if row:
+        if row := cursor.fetchone():
             details[level_vars[i]] = row[0]
         keys = list(level_vars.keys())
         keys.append(var_name)
@@ -325,8 +315,7 @@ def parse_multirow(var_name, var_value, details, multirows_completed):
         del auth_vars[var_name]
         i = list(auth_vars)[0]
         cursor.execute("SELECT var_value FROM {0} WHERE round_id = {1} AND var_name = \"{2}\"".format(current_table, query_row[2], i))
-        row = cursor.fetchone()
-        if row:
+        if row := cursor.fetchone():
             o = list(auth_vars[i])
             details[o[0]] = {o[1]:row[0]}
         keys = list(auth_vars.keys())
@@ -348,8 +337,7 @@ def parse_multirow(var_name, var_value, details, multirows_completed):
             query_where += "var_name = \"{0}\"".format(i)
         query_where += ")"
         cursor.execute("SELECT var_name, var_value FROM {0} WHERE {1}".format(current_table, query_where))
-        rows = cursor.fetchall()
-        if rows:
+        if rows := cursor.fetchall():
             for r in rows:
                 i = list(result_vars[r[0]])
                 if i[0] not in details:
@@ -375,8 +363,7 @@ def parse_multirow(var_name, var_value, details, multirows_completed):
             query_where += "var_name = \"{0}\"".format(i)
         query_where += ")"
         cursor.execute("SELECT var_name, var_value FROM {0} WHERE {1}".format(current_table, query_where))
-        rows = cursor.fetchall()
-        if rows:
+        if rows := cursor.fetchall():
             for r in rows:
                 details[module_vars[r[0]]] = r[1]
         keys = list(module_vars.keys())
@@ -399,8 +386,7 @@ def parse_multirow(var_name, var_value, details, multirows_completed):
             query_where += "var_name = \"{0}\"".format(i)
         query_where += ")"
         cursor.execute("SELECT var_name, var_value FROM {0} WHERE {1}".format(current_table, query_where))
-        rows = cursor.fetchall()
-        if rows:
+        if rows := cursor.fetchall():
             for r in rows:
                 if r[0] in ("round_end_clients", "round_end_ghosts"):
                     i = round_vars[r[0]]
@@ -425,8 +411,7 @@ def parse_multirow(var_name, var_value, details, multirows_completed):
             query_where += "var_name = \"{0}\"".format(i)
         query_where += ")"
         cursor.execute("SELECT var_name, var_value FROM {0} WHERE {1}".format(current_table, query_where))
-        rows = cursor.fetchall()
-        if rows:
+        if rows := cursor.fetchall():
             for r in rows:
                 details[mecha_vars[r[0]]] = r[1]
         keys = list(mecha_vars.keys())
@@ -481,7 +466,7 @@ args = parser.parse_args()
 db=MySQLdb.connect(host=args.address, user=args.username, passwd=args.password, db=args.database)
 cursor=db.cursor()
 cursor.execute("SELECT @@GLOBAL.version_comment")
-db_version = "".join([x for x in cursor.fetchone()])
+db_version = "".join(list(cursor.fetchone()))
 database_mysql = False
 if 'MySQL' in db_version:
     database_mysql = True
@@ -489,7 +474,7 @@ elif 'mariadb' not in db_version:
     choice = input("Unable to determine database version installed, are you using MySQL? Type Yes or No and press enter...").lower()
     if choice == "yes":
         database_mysql = True
-if database_mysql == True:
+if database_mysql:
     print("WARNING Database detected to be MySQL: tgstation no longer supports MySQL which has been superseded by MariaDB, a drop-in replacement.\nBefore running this script you will need to migrate to MariaDB.\nMigrating is very easy to do, for details on how see: https://mariadb.com/kb/en/library/upgrading-from-mysql-to-mariadb/")
     input("Press enter to quit...")
     quit()
@@ -507,10 +492,7 @@ try:
             cur_time = datetime.now()
             print("Reached row ID {0} Duration: {1}".format(current_id, cur_time - start_time))
         cursor.execute("SELECT * FROM {0} WHERE id = {1}".format(current_table, current_id))
-        query_row = cursor.fetchone()
-        if not query_row:
-            continue
-        else:
+        if query_row := cursor.fetchone():
             if current_round != query_row[2] or current_round == max_round_id:
                 multirows_completed.clear()
                 if query_values:
@@ -524,18 +506,16 @@ try:
             parsed_data = pick_parsing(query_row[3], query_row[4], query_row[5], multirows_completed)
             if not parsed_data:
                 continue
-            json_data = {}
-            json_data["data"] = parsed_data
+            json_data = {"data": parsed_data}
             new_key = query_row[3]
-            for r in renames:
-                if new_key in renames[r]:
+            for r, value in renames.items():
+                if new_key in value:
                     new_key = r
                     break
-            new_key_type = None
-            for t in key_types:
-                if new_key in key_types[t]:
-                    new_key_type = t
-                    break
+            new_key_type = next(
+                (t for t, value_ in key_types.items() if new_key in value_),
+                None,
+            )
             dequoted_json = re.sub("\'", "\\'", json.dumps(json_data))
             query_values += "('{0}',{1},'{2}','{3}',{4},'{5}'),".format(query_row[1], query_row[2], new_key, new_key_type, 1, dequoted_json)
     end_time = datetime.now()

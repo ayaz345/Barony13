@@ -63,9 +63,8 @@ for current_ckey in ckey_list:
     link = urlopen("https://secure.byond.com/members/{0}/?format=text".format(current_ckey[0]))
     data = link.read()
     data = data.decode("ISO-8859-1")
-    match = re.search("\tkey = \"(.+)\"", data)
-    if match:
-        key = match.group(1)
+    if match := re.search("\tkey = \"(.+)\"", data):
+        key = match[1]
         success += 1
     else:
         fail += 1

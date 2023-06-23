@@ -59,8 +59,7 @@ def three_way_merge(base, left, right):
     new_both = {}
     conflicts = []
     for key, state in list(new_left.items()):
-        in_right = new_right.get(key, None)
-        if in_right:
+        if in_right := new_right.get(key, None):
             if states_equal(state, in_right):
                 # allow it
                 new_both[key] = state
@@ -90,13 +89,13 @@ def three_way_merge(base, left, right):
             # left deletes
             print(f"    {state.name!r}: deleted in left")
             if not right_equals:
-                print(f"    ... but modified in right")
+                print("    ... but modified in right")
                 final_states.append(in_right)
         elif not in_right:
             # right deletes
             print(f"    {state.name!r}: deleted in right")
             if not left_equals:
-                print(f"    ... but modified in left")
+                print("    ... but modified in left")
                 final_states.append(in_left)
         elif left_equals and right_equals:
             # changed in neither
@@ -126,17 +125,17 @@ def three_way_merge(base, left, right):
             conflicts.append(in_right)
 
     # add states which both left and right added the same
-    for key, state in new_both.items():
+    for state in new_both.values():
         print(f"    {state.name!r}: added same in both")
         final_states.append(state)
 
     # add states that are brand-new in the left
-    for key, state in new_left.items():
+    for state in new_left.values():
         print(f"    {state.name!r}: added in left")
         final_states.append(state)
 
     # add states that are brand-new in the right
-    for key, state in new_right.items():
+    for state in new_right.values():
         print(f"    {state.name!r}: added in right")
         final_states.append(state)
 

@@ -15,7 +15,7 @@ class CheckedCall(object):
     def __call__(self, *args):
         ret = self.f(*args)
         if not ret and get_errno():
-            raise PyperclipWindowsException("Error calling " + self.f.__name__)
+            raise PyperclipWindowsException(f"Error calling {self.f.__name__}")
         return ret
 
     def __setattr__(self, key, value):
@@ -140,12 +140,6 @@ def init_windows_clipboard():
     def paste_windows():
         with clipboard(None):
             handle = safeGetClipboardData(CF_UNICODETEXT)
-            if not handle:
-                # GetClipboardData may return NULL with errno == NO_ERROR
-                # if the clipboard is empty.
-                # (Also, it may return a handle to an empty buffer,
-                # but technically that's not empty)
-                return ""
-            return c_wchar_p(handle).value
+            return "" if not handle else c_wchar_p(handle).value
 
     return copy_windows, paste_windows
